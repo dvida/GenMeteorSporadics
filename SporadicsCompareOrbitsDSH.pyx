@@ -90,8 +90,9 @@ cdef double calcD_SH(double *point1, double *point2):
     return sqrt(DSH2)
 
 
+
 def findNearestNeighborDistDSH(np.ndarray[FLOAT_TYPE_t, ndim=2] original_data):
-    """ Find the mean nearest neighbor D_SH by pairing each original orbit to the synthetic orbit."""
+    """ Find the mean nearest neighbor D_SH by pairing each input orbit with each orbit. """
 
 
     # Define the data indices
@@ -103,6 +104,8 @@ def findNearestNeighborDistDSH(np.ndarray[FLOAT_TYPE_t, ndim=2] original_data):
 
     cdef int i = 0
     cdef int j = 0
+
+    cdef int n_orbits = 0
 
     cdef float minimum_dsh = 999.0
     cdef float dsh_sum = 0.0
@@ -132,6 +135,9 @@ def findNearestNeighborDistDSH(np.ndarray[FLOAT_TYPE_t, ndim=2] original_data):
         if not (i % take_every_nth == 0):
             continue
 
+        # Count the number of checked orbits
+        n_orbits += 1
+
         for j in range(original_data.shape[0]):
 
             # Skip if the two orbits are the same
@@ -153,7 +159,9 @@ def findNearestNeighborDistDSH(np.ndarray[FLOAT_TYPE_t, ndim=2] original_data):
 
 
     # Calculate the average DSH
-    return dsh_sum/(float(original_data.shape[0]) / take_every_nth)
+    # return dsh_sum/(float(original_data.shape[0]) / take_every_nth)
+    return dsh_sum/float(n_orbits)
+
 
 
 def findMinimumDSH(np.ndarray[FLOAT_TYPE_t, ndim=2] original_data, np.ndarray[FLOAT_TYPE_t, ndim=2] synthetic_data):
