@@ -252,10 +252,10 @@ def loadDataCAMS(file_name, sol_min, sol_max, Q_thresh=15.0, Vg_error_thresh=0.1
 
             # Geocentric velocity
             vg = float(line[45])
-            vg_error = float(line[46])
+            vg_std = float(line[46])
 
             # Skip this orbit if Vg has a too large error
-            if vg_error >= vg*Vg_error_thresh:
+            if vg_std >= vg*Vg_error_thresh:
                 continue
 
             # Semi-major axis
@@ -294,7 +294,10 @@ def loadDataCAMS(file_name, sol_min, sol_max, Q_thresh=15.0, Vg_error_thresh=0.1
             if Qc < Q_thresh:
                 continue
 
-            # Geocentric eliptic latitude
+            # Geocentric ecliptic longitude
+            lambda_g = float(line[47])
+
+            # Geocentric ecliptic latitude
             beta_g = float(line[49])
 
             ### Set missing params to 0
@@ -305,8 +308,8 @@ def loadDataCAMS(file_name, sol_min, sol_max, Q_thresh=15.0, Vg_error_thresh=0.1
 
             # Append the orbit
             orbits_array.append(np.array([ID, mjd, sol_lon, mag_abs, ra_t, dec_t, vi, vg, 
-                a, q, e, incl, node, peri, H_beg, H_end, Qc, dV12, beta_g, q_std, e_std, incl_std, node_std, 
-                peri_std]))
+                a, q, e, incl, node, peri, H_beg, H_end, Qc, dV12, lambda_g, beta_g, q_std, e_std, incl_std, 
+                node_std, peri_std, vg_std]))
             
             # print ID, mjd, sol_lon, ra_t, dec_t, vg, q, e, incl, node, peri
 
