@@ -929,7 +929,7 @@ def hist2dDiff(original_data, synthetic_data, x_std, y_std, x_index, y_index):
         y_index: [int] column index of the Y axis orbital element in the data
     
     Return:
-        [float] mean top 1% absolute differences between the observed and synthetic data histograms
+        [float] Chi Squared distance between the observed and synthetic data histograms
 
     """
 
@@ -966,9 +966,72 @@ def hist2dDiff(original_data, synthetic_data, x_std, y_std, x_index, y_index):
 
 
 
-def getHistDiff(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, peri_std, incl_std):
-    """ Generate KDE orbits using the given bandwidth and calculate the mean top 1% absolute histogram 
-        difference. 
+def hist2dChiSquared(original_data, synthetic_data, x_std, y_std, x_index, y_index):
+    """ Calculate the Chi Squared between histograms of the original and simulated data.
+
+    Reference: Pele, O. and Werman, M., 2010, September. The quadratic-chi histogram distance family. 
+        In European conference on computer vision (pp. 749-762). Springer Berlin Heidelberg.
+
+    The bin widths are chosen to be similar to the standard deviation of the data.
+
+    Arguments:
+        original_data: [2D ndarray] 2D numpy array containing the observed data
+        synthetic_data: [2D ndarray] 2D numpy array containing synthetic data
+        x_std: [float] standard deviation of the axis X data
+        y_std: [float] standard deviation of the axis Y data
+        x_index: [int] column index of the X axis orbital element in the data
+        y_index: [int] column index of the Y axis orbital element in the data
+    
+    Return:
+        [float] Chi Squared distance between the observed and synthetic data histograms
+
+    """
+
+    ### Calculate the number of bins
+
+    # Get the data range
+    x_min, x_max = min(original_data[:, x_index]), max(original_data[:, x_index])
+    y_min, y_max = min(original_data[:, y_index]), max(original_data[:, y_index])
+
+    x_range = x_max - x_min
+    y_range = y_max - y_min
+
+    # Calculate the number of bins used
+    x_nbins = int(x_range/x_std)
+    y_nbins = int(y_range/y_std)
+
+    ###
+
+    # Create a histogram of the original data
+    orig_H, _, _ = np.histogram2d(original_data[:, x_index], original_data[:, y_index], bins=[x_nbins, \
+        y_nbins])
+
+    # Create a histogram of the synthetic data
+    synt_H, _, _  = np.histogram2d(synthetic_data[:, x_index], synthetic_data[:, y_index], bins=[x_nbins, \
+        y_nbins])
+
+    chi_sq_sum = 0
+
+    # Calculate the sum of Chi Squared
+    for synth_row, orig_row in zip(synt_H, orig_H):
+        for synth_element, orig_element in zip(synth_row, orig_row):
+
+            if (synth_element == 0) and (orig_element == 0):
+                continue
+
+            chi_sq_sum += ((synth_element - orig_element)**2)/(synth_element + orig_element)
+
+    chi_sq_sum = (1/2.0)*chi_sq_sum
+
+    return chi_sq_sum
+
+
+
+
+def getHistDiff(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, peri_std, incl_std, 
+        generate_type='kde'):
+    """ Generate orbits by either the KDE method using the given bandwidth, or Jopek's method E, and calculate 
+        the Chi Squared histogram distance.
     
     Arguments:
         loaded_data: [2D ndarray] numpy array containing the input data, column indices are defined at the 
@@ -980,9 +1043,13 @@ def getHistDiff(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, peri_
         e_std: [float] standard deviation of the eccentricity, used for plotting 2D histograms
         peri_std: [float] standard deviation of the argument of perihelion, used for plotting 2D histograms
         incl_std: [float] standard deviation of the inclination, used for plotting 2D histograms
+
+    Keyword arguments:
+        generate_type: [str] If "kde", KDE orbits will ge generated, if "jopek", jopek method E orbits will be 
+            generated. "kde" by default.
     
     Return:
-        [float] mean top 1% absolute differences between the observed and synthetic data histograms
+        [float] Chi Squared histogram distance between the observed and synthetic data histograms
 
     """
 
@@ -996,10 +1063,21 @@ def getHistDiff(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, peri_
     # Make the 2D observed data array
     original_data_array = np.column_stack([q_array, e_array, peri_array, node_array, incl_array])
 
-    # Draw KDE orbits
-    inv_a_generated, q_generated, e_generated, peri_generated, node_generated, \
-        incl_generated = generateKDEOrbits(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, 
-            peri_std, incl_std, show_plots=False)
+
+    if generate_type == 'kde':
+
+        # Draw KDE orbits
+        inv_a_generated, q_generated, e_generated, peri_generated, node_generated, \
+            incl_generated = generateKDEOrbits(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, 
+                peri_std, incl_std, show_plots=False)
+
+    elif generate_type == 'jopek':
+
+        # Generate synthetic sporadic orbits using Jopek & Bronikowska (2016) method E
+        inv_a_generated, q_generated, e_generated, peri_generated, node_generated, \
+            incl_generated = generateJopekMethodE(loaded_data, len(loaded_data), q_std, node_std, e_std, 
+                peri_std, incl_std, show_plots=False)
+
 
     # Make the 2D synthetic data array
     synthetic_data_array = np.column_stack([q_generated, e_generated, peri_generated, node_generated, 
@@ -1010,12 +1088,13 @@ def getHistDiff(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, peri_
     q_index = 0 # q index
 
     # Calculate the histogram difference
-    return hist2dDiff(original_data_array, synthetic_data_array, peri_std, q_std, peri_index, q_index)
+    #return hist2dDiff(original_data_array, synthetic_data_array, peri_std, q_std, peri_index, q_index)
+    return hist2dChiSquared(original_data_array, synthetic_data_array, peri_std, q_std, peri_index, q_index)
 
 
 
-def estimateBandwidth(loaded_data, n_samples, q_std, node_std, e_std, peri_std, incl_std):
-    """ Run the KDE for a range of bandwidths and calculate top histogram differences for each bandwidth. 
+def exploreBandwidth(loaded_data, n_samples, q_std, node_std, e_std, peri_std, incl_std):
+    """ Run the KDE for a range of bandwidths and calculate Chi Squared histogram distance for each bandwidth. 
         
     Arguments:
         loaded_data: [2D ndarray] numpy array containing the input data, column indices are defined at the 
@@ -1046,7 +1125,7 @@ def estimateBandwidth(loaded_data, n_samples, q_std, node_std, e_std, peri_std, 
 
     histogram_differences = []
 
-    # Go thourgh the given bandwidths
+    # Go through the given bandwidths
     for bandwidth in bandwidth_range:
 
         # Repeat 10 times and take the average
@@ -1067,8 +1146,12 @@ def estimateBandwidth(loaded_data, n_samples, q_std, node_std, e_std, peri_std, 
             peri_index = 2
             q_index = 0 # q index
 
-            # Calculate the histogram difference
-            temp_hist_diff.append(hist2dDiff(original_data_array, synthetic_data_array, peri_std, q_std, 
+            # # Calculate the top 1% histogram difference
+            # temp_hist_diff.append(hist2dDiff(original_data_array, synthetic_data_array, peri_std, q_std, 
+            #     peri_index, q_index))
+
+            # Calculate the Chi Squared of the histograms
+            temp_hist_diff.append(hist2dChiSquared(original_data_array, synthetic_data_array, peri_std, q_std, 
                 peri_index, q_index))
 
 
@@ -1092,7 +1175,8 @@ def estimateBandwidth(loaded_data, n_samples, q_std, node_std, e_std, peri_std, 
 
     # Set axes labels
     plt.xlabel('Bandwidth')
-    plt.ylabel('Mean of top 1% absolute histogram differences')
+    #plt.ylabel('Mean of top 1% absolute histogram differences')
+    plt.ylabel('$\chi^2$ histogram distance')
 
     plt.grid()
 
@@ -1241,8 +1325,12 @@ def estimateBandwidthMatrixWithNN(loaded_data, n_samples, q_std, node_std, e_std
             peri_index = 2
             q_index = 0 # q index
 
-            # Calculate the histogram difference
-            hist_diff = hist2dDiff(original_data_array, synthetic_data_array, peri_std, q_std, 
+            # # Calculate the histogram difference
+            # hist_diff = hist2dDiff(original_data_array, synthetic_data_array, peri_std, q_std, 
+            #     peri_index, q_index)
+
+            # Calculate the Chi Squared histogram distance
+            hist_diff = hist2dChiSquared(original_data_array, synthetic_data_array, peri_std, q_std, 
                 peri_index, q_index)
 
             # Save the result to the histogram matrix
@@ -1367,6 +1455,14 @@ if __name__ == "__main__":
             incl_std)
 
 
+
+    # Calculate the histogram difference
+    jopek_hist_diff = getHistDiff(loaded_data, n_samples, 0, q_std, node_std, e_std, peri_std, incl_std, 
+        generate_type='jopek')
+
+    print('Jopek Chi Squared histogram distance:', jopek_hist_diff)
+
+
     # # Uncomment if you wish to calculate the nearest neighbour distance of orbits generated using Method E
     # jopek_data_array = np.column_stack([q_jopek, e_jopek, incl_jopek, node_jopek, peri_jopek])
     # jopek_nn = findNearestNeighborDistDSH(jopek_data_array)
@@ -1386,7 +1482,7 @@ if __name__ == "__main__":
     ### HISTOGRAM DIFFERENCES OR NEAREST NEIGHBOUR VALUE - ONLY FOR SCALAR MATRIX BANDWIDTH
 
     # # Run bandwidth estimation
-    # estimateBandwidth(loaded_data, n_samples, q_std, node_std, e_std, peri_std, incl_std)
+    # exploreBandwidth(loaded_data, n_samples, q_std, node_std, e_std, peri_std, incl_std)
 
     # # Calculate Nearest Neighbor distances for a variety of bandwidths
     # calculateNN(loaded_data, n_samples, q_std, node_std, e_std, peri_std, incl_std)
@@ -1452,8 +1548,9 @@ if __name__ == "__main__":
         # print('Average minimum DSH::', avg_min_dsh)
 
         # Calculate the histogram difference
-        hist_diff = getHistDiff(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, peri_std, incl_std)
-        print('Histogram diff:', hist_diff)
+        hist_diff = getHistDiff(loaded_data, n_samples, bandwidth, q_std, node_std, e_std, peri_std, incl_std,
+            generate_type='kde')
+        print('Chi Squared histogram distance:', hist_diff)
 
         # # Print out the results
         # print('   1/a,    Q,    Node,   e,    peri,   incl')

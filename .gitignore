@@ -37,3 +37,6 @@
 
 # PNG images
 *.png
+
+# Numpy saved objects
+*.npy
