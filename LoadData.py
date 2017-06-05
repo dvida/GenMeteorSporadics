@@ -324,3 +324,37 @@ if __name__ == "__main__":
     orbits_array = loadDataCAMS('CAMS-v2-2013.csv', 100, 150, shower_num=7)
 
     print(orbits_array)
+
+
+    # Parse CAMS data for sporadics
+    orbits_array = loadDataCAMS('CAMS-v2-2013.csv', 0, 360, shower_num=None)
+
+    print(orbits_array)
+
+    # Get all meteor orbits
+    meteor_ids = orbits_array[:, 8:13]
+
+    print(len(meteor_ids))
+
+    # Find unique rows
+    b = np.ascontiguousarray(meteor_ids).view(np.dtype((np.void, meteor_ids.dtype.itemsize * meteor_ids.shape[1])))
+    _, idx = np.unique(b, return_index=True)
+
+    unique_data = meteor_ids[idx]
+
+    print(len(unique_data))
+
+
+
+    # id_check = []
+    # c = 0
+    # for id_n in meteor_ids:
+
+    #     if id_n in id_check:
+    #         print('Duplicate:', id_n)
+    #         c += 1
+
+    #     else:
+    #         id_check.append(id_n)
+
+    # print('Total duplicates:', c)

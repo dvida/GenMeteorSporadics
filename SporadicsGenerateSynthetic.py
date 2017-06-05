@@ -1409,6 +1409,19 @@ if __name__ == "__main__":
     print('Input data size:', len(loaded_data))
 
 
+    # Find unique orbits
+    meteor_ids = loaded_data[:, 8:13]
+    b = np.ascontiguousarray(meteor_ids).view(np.dtype((np.void, meteor_ids.dtype.itemsize*meteor_ids.shape[1])))
+    _, idx = np.unique(b, return_index=True)
+
+    unique_data = meteor_ids[idx]
+
+    print('Unique orbits:', len(unique_data))
+
+    # Take only unique orbits
+    loaded_data = loaded_data[idx]
+
+
     # Define the number of orbits to draw from the KDE (the same as the number of observed input orbits)
     n_samples = len(loaded_data)
 

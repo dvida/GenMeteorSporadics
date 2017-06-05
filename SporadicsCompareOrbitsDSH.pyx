@@ -121,7 +121,7 @@ def findNearestNeighborDistDSH(np.ndarray[FLOAT_TYPE_t, ndim=2] original_data):
     print('Size of input data', original_data.shape[0])
 
     # Take every Nth point (to speed up the calculation)
-    cdef int take_every_nth = 50
+    cdef int take_every_nth = 20
 
     for i in range(original_data.shape[0]):
 
