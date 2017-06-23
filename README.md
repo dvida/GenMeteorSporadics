@@ -2,7 +2,9 @@
 
 ## Introduction
 This is the supplementary code to the paper:
-> Vida, D., Brown, P.G., Campbell-Brown, M. (2017) "Generating realistic synthetic meteoroid orbits" (to be published).
+> Vida, D., Brown, P.G., Campbell-Brown, M. (2017) "Generating realistic synthetic meteoroid orbits", Icarus, 296, pp. 197 - 215
+
+DOI: https://doi.org/10.1016/j.icarus.2017.06.020
 
 Use this code to generate all graphs and datasets in the aforementioned paper.
 
@@ -28,7 +30,7 @@ All functions are well documented for your convenience.
 
 ## Academic citing
 For academic use, please cite the paper:
-> Vida, D., Brown, P.G., Campbell-Brown, M. (2017) "Generating realistic synthetic meteoroid orbits" (to be published).
+> Vida, D., Brown, P.G., Campbell-Brown, M. (2017) "Generating realistic synthetic meteoroid orbits", Icarus, 296, pp. 197 - 215
 
 ## References
 - Jopek, T. J., & Bronikowska, M. (2016). "Probability of coincidental similarity among the orbits of small bodies – I. Pairing." Planetary and Space Science.
