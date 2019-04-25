@@ -805,11 +805,11 @@ def generateKDEOrbits(loaded_data, n_samples, bandwidth, q_std, node_std, e_std,
 
         # Set the covariance matrix
         kde_kernel.covariance = bandwidth*np.array(
-            [[q_std,    0,       0,       0,        0],
-            [   0,   np.radians(node_std),   0,       0,        0],
-            [   0,      0,     np.radians(e_std),     0,        0],
-            [   0,      0,       0,   np.radians(peri_std),     0],
-            [   0,      0,       0,       0,    np.radians(incl_std)]])**2
+            [[q_std,          0,             0,          0,                 0],
+            [   0,   np.radians(node_std),   0,          0,                 0],
+            [   0,            0,           e_std,        0,                 0],
+            [   0,            0,             0,   np.radians(peri_std),     0],
+            [   0,            0,             0,          0,      np.radians(incl_std)]])**2
 
     else:
 
@@ -1004,11 +1004,11 @@ def hist2dChiSquared(original_data, synthetic_data, x_std, y_std, x_index, y_ind
 
     # Create a histogram of the original data
     orig_H, _, _ = np.histogram2d(original_data[:, x_index], original_data[:, y_index], bins=[x_nbins, \
-        y_nbins])
+        y_nbins], range=[[x_min, x_max], [y_min, y_max]])
 
     # Create a histogram of the synthetic data
     synt_H, _, _  = np.histogram2d(synthetic_data[:, x_index], synthetic_data[:, y_index], bins=[x_nbins, \
-        y_nbins])
+        y_nbins], range=[[x_min, x_max], [y_min, y_max]])
 
     chi_sq_sum = 0
 
