@@ -35,6 +35,7 @@
 from __future__ import division, print_function
 
 import sys
+import time
 
 import numpy as np
 import matplotlib
@@ -818,6 +819,10 @@ def generateKDEOrbits(loaded_data, n_samples, bandwidth, q_std, node_std, e_std,
 
     # Set the inverse of the covariance
     kde_kernel.inv_cov = np.linalg.inv(kde_kernel.covariance)
+
+    # Randomize the numpy seed for generating random numbers by giving it the current time
+    seed_int = int(100000*time.time()%1000000)
+    np.random.seed(seed_int)
 
     # Draw sample orbits from the KDE
     kde_results = kde_kernel.resample(n_samples)
