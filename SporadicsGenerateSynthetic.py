@@ -35,7 +35,6 @@
 from __future__ import division, print_function
 
 import sys
-import time
 
 import numpy as np
 import matplotlib
@@ -820,10 +819,6 @@ def generateKDEOrbits(loaded_data, n_samples, bandwidth, q_std, node_std, e_std,
     # Set the inverse of the covariance
     kde_kernel.inv_cov = np.linalg.inv(kde_kernel.covariance)
 
-    # Randomize the numpy seed for generating random numbers by giving it the current time
-    seed_int = int(100000*time.time()%1000000)
-    np.random.seed(seed_int)
-
     # Draw sample orbits from the KDE
     kde_results = kde_kernel.resample(n_samples)
 
@@ -873,27 +868,44 @@ def generateKDEOrbits(loaded_data, n_samples, bandwidth, q_std, node_std, e_std,
     ###
 
 
-    # Generate some more data to replace the rejected orbits:
-    if (len(q_results) < n_samples) and not get_more_data:
 
-        # print('Rejected orbits percent:', (1.0 - len(q_results)/n_samples)*100.0)
+    if not get_more_data:
 
-        # Calculate the number of missing orbits
-        missing_orbits_n = n_samples - len(q_results)
+	    # Generate some more data to replace the rejected orbits:
+	    while len(q_results) < n_samples:
 
-        # Generate new synthetic orbits
-        inv_a_more, q_more, e_more, peri_more, node_more, incl_more = generateKDEOrbits(loaded_data, 
-            n_samples, bandwidth, q_std, node_std, e_std, peri_std, incl_std, show_plots=False, 
-            get_more_data=True)
+	        # print('Rejected orbits percent:', (1.0 - len(q_results)/n_samples)*100.0)
 
-        # Fill the rejected orbits with new ones, which are randomly chosen
-        random_choice = np.random.randint(0, len(q_more) - 1, missing_orbits_n)
-        inv_a_results = np.r_[inv_a_results, inv_a_more[random_choice]]
-        q_results = np.r_[q_results, q_more[random_choice]]
-        e_results = np.r_[e_results, e_more[random_choice]]
-        peri_results = np.r_[peri_results, peri_more[random_choice]]
-        node_results = np.r_[node_results, node_more[random_choice]]
-        incl_results = np.r_[incl_results, incl_more[random_choice]]
+	        # Calculate the number of missing orbits
+	        missing_orbits_n = n_samples - len(q_results)
+
+	        # print('Missing orbits:', missing_orbits_n)
+
+	        # Generate new synthetic orbits
+	        inv_a_more, q_more, e_more, peri_more, node_more, incl_more = generateKDEOrbits(loaded_data, 
+	            n_samples, bandwidth, q_std, node_std, e_std, peri_std, incl_std, show_plots=False, 
+	            get_more_data=True)
+
+	        # Fill the rejected orbits with new ones, which are randomly chosen
+	        random_choice = np.random.randint(0, len(q_more) - 1, missing_orbits_n)
+	        inv_a_results = np.r_[inv_a_results, inv_a_more[random_choice]]
+	        q_results = np.r_[q_results, q_more[random_choice]]
+	        e_results = np.r_[e_results, e_more[random_choice]]
+	        peri_results = np.r_[peri_results, peri_more[random_choice]]
+	        node_results = np.r_[node_results, node_more[random_choice]]
+	        incl_results = np.r_[incl_results, incl_more[random_choice]]
+
+	        ### Remove orbit duplicates ###
+
+	        synthetic_data_array = np.column_stack([inv_a_results, q_results, e_results, incl_results, \
+	        	node_results, peri_results])
+	        
+	        synthetic_data_array = np.unique(synthetic_data_array, axis=0)
+
+	        inv_a_results, q_results, e_results, incl_results, node_results, \
+	        	peri_results = synthetic_data_array.T
+
+	        ### ###
 
 
     if show_plots:
@@ -913,7 +925,7 @@ def generateKDEOrbits(loaded_data, n_samples, bandwidth, q_std, node_std, e_std,
         # Plot all results
         plotAllResults(loaded_data, inv_a_results, q_results, e_results, peri_results, node_results,
             incl_results, q_std, e_std, peri_std, node_std, incl_std, 
-            data_label='kde_bandwidth_'+str(bandwidth_label))
+            data_label='kde_bandwidth_' + str(bandwidth_label))
 
 
     return inv_a_results, q_results, e_results, peri_results, node_results, incl_results
@@ -1402,7 +1414,12 @@ if __name__ == "__main__":
     # Geocentric velocity threshold
     Vg_error_thresh = 0.1
 
+    # Set the random number generator seed so the results are reproducible
+    np.random.seed(1)
+
     ###
+
+
 
     # Load CAMS data (sporadics only, thus shower_num=0)
     print('Loading data...')
@@ -1550,6 +1567,10 @@ if __name__ == "__main__":
         original_data_array = np.column_stack([q_array, e_array, incl_array, node_array, peri_array])
         synthetic_data_array = np.column_stack([q_generated, e_generated, incl_generated, node_generated, 
             peri_generated])
+
+
+        # print('Total orbits:', len(synthetic_data_array))
+        # print('Unique orbits:', len(np.unique(synthetic_data_array, axis=0)))
 
         # # UNCOMMENT if you want to find nearest neighbors distance (WARNING: it takes a while)
         # original_nn = findNearestNeighborDistDSH(original_data_array)
